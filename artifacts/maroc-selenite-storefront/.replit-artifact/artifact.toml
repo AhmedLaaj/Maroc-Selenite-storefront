@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Maroc Sélénite"
+description = "A multilingual customer-facing storefront for Maroc Sélénite in Marrakech, showcasing selenite décor and an editorial product discovery experience in French, Arabic, and English."
+version = "1.0.0"
+id = "artifacts/maroc-selenite-storefront"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18164
+
+[services.development]
+run = "pnpm --filter @workspace/maroc-selenite-storefront run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/maroc-selenite-storefront", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/maroc-selenite-storefront/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18164"
+BASE_PATH = "/"

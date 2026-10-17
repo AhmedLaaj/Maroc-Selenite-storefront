@@ -1,0 +1,1 @@
+- [Storefront truthfulness](storefront-truthfulness.md) — Never present sample products, prices, provenance, shipping, or payment as confirmed store facts.
