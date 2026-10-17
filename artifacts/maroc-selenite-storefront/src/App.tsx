@@ -107,14 +107,39 @@ function Home() {
   const heroTitle = locale === 'ar' ? <>السيلينيت،<br/><em>في الضوء.</em></> : locale === 'fr' ? <>La lumière,<br/><em>en matière.</em></> : <>Light,<br/><em>made tangible.</em></>;
   return <main>
     <section className="hero">
-      <div className="hero-copy fade-up"><div className="eyebrow">{t('heroKicker')}</div><h1>{heroTitle}</h1><p>{t('intro')}</p><Link href="/collections/maison" className="button-primary" data-testid="link-explore">{t('explore')} <ArrowUpRight size={14}/></Link></div>
-      <div className="hero-visual fade-up delay-1"><img src="/atelier-hero.png" alt={t('noticeTiny')}/><span className="visual-label">{t('visualStudy')} · 01 / 06</span></div>
+      <div className="hero-visual fade-up">
+        <img src="/selenite-lifestyle-hero.png" alt={t('noticeTiny')}/>
+        <div className="hero-copy">
+          <div className="eyebrow">{t('heroKicker')}</div>
+          <h1>{heroTitle}</h1>
+          <p>{t('intro')}</p>
+          <Link href="/collections/maison" className="button-primary" data-testid="link-explore">{t('explore')} <ArrowUpRight size={14}/></Link>
+        </div>
+        <div className="hero-notes" aria-label={t('collectionsKicker')}>
+          <span><small>01</small>{t('homeMinerals')}</span>
+          <span><small>02</small>{t('homeObjectsTitle')}</span>
+          <span><small>03</small>{t('homeTextiles')}</span>
+        </div>
+        <span className="visual-label">{t('visualStudy')} · 01 / 06</span>
+      </div>
+      <aside className="hero-side fade-up delay-1">
+        <div className="hero-side-heading">
+          <div className="eyebrow">{t('collectionsKicker')} · 03</div>
+          <h2>{t('homeMinerals')}</h2>
+          <p>{t('collectionDesc')}</p>
+          <Link href="/collections/selenite" className="utility-link">{t('all')} <ArrowUpRight size={13}/></Link>
+        </div>
+        <div className="hero-side-products">{products.slice(0,3).map(product=><ProductCard key={product.id} product={product}/>)}</div>
+        <div className="hero-side-feature">
+          <img src="/selenite-bowl.png" alt={t('noticeTiny')}/>
+          <div>
+            <div className="eyebrow">MAROC SÉLÉNITE · 01</div>
+            <h3>{t('homeEditorial')}</h3>
+            <Link href="/our-story" className="utility-link">{t('story')} <ArrowUpRight size={13}/></Link>
+          </div>
+        </div>
+      </aside>
     </section>
-    <div className="hero-notes" aria-label={t('collectionsKicker')}>
-      <span><small>01</small>{t('homeMinerals')}</span>
-      <span><small>02</small>{t('homeObjectsTitle')}</span>
-      <span><small>03</small>{t('homeTextiles')}</span>
-    </div>
     <div className="page-wrap">
       <section className="section">
         <div className="section-heading"><div><div className="eyebrow">{t('collectionsKicker')}</div><h2>{t('edit')}</h2></div><p>{t('collectionDesc')}</p></div>

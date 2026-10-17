@@ -1,1 +1,2 @@
 - [Storefront truthfulness](storefront-truthfulness.md) — Never present sample products, prices, provenance, shipping, or payment as confirmed store facts.
+- [Storefront design reference](storefront-design-reference.md) — Match the supplied ecommerce reference’s composition, not only its colors and typography.
