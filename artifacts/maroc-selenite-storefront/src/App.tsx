@@ -72,7 +72,6 @@ function Header() {
         <Link href="/search" onClick={()=>setMenuOpen(false)}>{t('search')}</Link>
       </nav>}
     </header>
-    <div className="notice-strip"><strong>{t('preview')}:</strong> {t('noticeTiny')}</div>
   </>;
 }
 
@@ -105,12 +104,17 @@ function ProductGrid({ items }: { items:Product[] }) {
 
 function Home() {
   const { t, locale } = useStore();
-  const heroTitle = locale === 'ar' ? <>البيت،<br/><em>على مهل.</em></> : locale === 'fr' ? <>La maison,<br/><em>à son rythme.</em></> : <>A home,<br/><em>at its own pace.</em></>;
+  const heroTitle = locale === 'ar' ? <>السيلينيت،<br/><em>في الضوء.</em></> : locale === 'fr' ? <>La lumière,<br/><em>en matière.</em></> : <>Light,<br/><em>made tangible.</em></>;
   return <main>
     <section className="hero">
       <div className="hero-copy fade-up"><div className="eyebrow">{t('heroKicker')}</div><h1>{heroTitle}</h1><p>{t('intro')}</p><Link href="/collections/maison" className="button-primary" data-testid="link-explore">{t('explore')} <ArrowUpRight size={14}/></Link></div>
       <div className="hero-visual fade-up delay-1"><img src="/atelier-hero.png" alt={t('noticeTiny')}/><span className="visual-label">{t('visualStudy')} · 01 / 06</span></div>
     </section>
+    <div className="hero-notes" aria-label={t('collectionsKicker')}>
+      <span><small>01</small>{t('homeMinerals')}</span>
+      <span><small>02</small>{t('homeObjectsTitle')}</span>
+      <span><small>03</small>{t('homeTextiles')}</span>
+    </div>
     <div className="page-wrap">
       <section className="section">
         <div className="section-heading"><div><div className="eyebrow">{t('collectionsKicker')}</div><h2>{t('edit')}</h2></div><p>{t('collectionDesc')}</p></div>
