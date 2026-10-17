@@ -141,7 +141,7 @@ function Home() {
       </aside>
     </section>
     <div className="page-wrap">
-      <section className="section">
+      <section className="section collection-feature-section">
         <div className="section-heading"><div><div className="eyebrow">{t('collectionsKicker')}</div><h2>{t('edit')}</h2></div><p>{t('collectionDesc')}</p></div>
         <div className="collection-tiles">
           <Link href="/collections/selenite" className="collection-tile"><img src="/selenite-bowl.png" alt=""/><div className="tile-copy"><small>01 / {t('tileMaterial')}</small><h3>{t('homeMinerals')}</h3></div></Link>

@@ -912,3 +912,55 @@ body { background: var(--paper); }
   .hero-side-feature img { height: 105px; }
   .hero-side-feature h3 { font-size: 16px; }
 }
+
+/* A softer handoff into the collection grid, with a consistent image rhythm. */
+.collection-feature-section {
+  position: relative;
+  padding-top: 54px;
+  background: linear-gradient(180deg, rgba(233,223,207,.62) 0, rgba(247,244,236,0) 112px);
+}
+.collection-tiles {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 14px;
+}
+.collection-tile,
+.collection-tile:nth-child(2),
+.collection-tile:nth-child(3) {
+  height: clamp(300px, 30vw, 410px);
+  min-height: 0;
+  margin-top: 0;
+}
+.collection-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.collection-tile:nth-child(3) img { object-position: 78% center; }
+
+@media (max-width: 900px) {
+  .collection-feature-section { padding-top: 44px; }
+  .collection-tile,
+  .collection-tile:nth-child(2),
+  .collection-tile:nth-child(3) { height: 320px; }
+}
+@media (max-width: 680px) {
+  .collection-feature-section { padding-top: 34px; }
+  .collection-tiles {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    margin-inline-end: -20px;
+    padding-inline-end: 20px;
+    scroll-snap-type: x mandatory;
+  }
+  .collection-tile,
+  .collection-tile:nth-child(2),
+  .collection-tile:nth-child(3) {
+    flex: 0 0 78vw;
+    width: 78vw;
+    height: 310px;
+    min-height: 0;
+    scroll-snap-align: start;
+  }
+}
