@@ -1,0 +1,17 @@
+**/node_modules
+**/dist
+**/.vite
+.git
+.github
+.cursor
+.agents
+.local
+.cache
+**/.expo
+**/*.tsbuildinfo
+**/.DS_Store
+**/Thumbs.db
+**/*.log
+coverage
+tmp
+out-tsc
