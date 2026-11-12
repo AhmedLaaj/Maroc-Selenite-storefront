@@ -1,35 +1,35 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
-import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } from 'wouter';
+import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams, useSearch } from 'wouter';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Menu, Minus, Plus, Search, ShoppingBag, X } from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import NotFound from '@/pages/not-found';
+import AdminApp from '@/admin/AdminApp';
 import '@/index.css';
 
 type Locale = 'fr' | 'en' | 'ar';
 type Product = { id: string; slug: string; category: string; price: number; image: string; tone: string; title: Record<Locale,string>; subtitle: Record<Locale,string>; description: Record<Locale,string> };
 type CartItem = { id: string; quantity: number };
-type StoreContextValue = { locale: Locale; setLocale: (locale: Locale) => void; cart: CartItem[]; add: (id:string, quantity?:number) => void; change: (id:string, delta:number) => void; remove: (id:string) => void; t: (key:string) => string };
+type StoreContextValue = { locale: Locale; setLocale: (locale: Locale) => void; cart: CartItem[]; add: (id:string, quantity?:number) => void; change: (id:string, delta:number) => void; remove: (id:string) => void; clear: () => void; t: (key:string) => string };
 const StoreContext = createContext<StoreContextValue | null>(null);
 const localeLabels: Record<Locale,string> = { fr:'FR', en:'EN', ar:'عربي' };
 const copy: Record<Locale,Record<string,string>> = {
   fr: {
     notice:'Aperçu de la boutique — contenus, visuels et prix présentés à titre illustratif. Aucun stock ni offre réelle n’est confirmé.', info:'Informations', heroKicker:'MARRAKECH · OBJETS & MATIÈRES', tileMaterial:'MATIÈRES', tileHome:'MAISON', tileTexture:'SCULPTURES', visualStudy:'ÉTUDE VISUELLE',
-    home:'Accueil', collections:'Collections', story:'Notre histoire', contact:'Contact', search:'Recherche', cart:'Panier', all:'Tout voir', explore:'Explorer la collection', discover:'Découvrir les pièces', edit:'La matière, en toute simplicité', intro:'Objets de maison et minéraux choisis pour leur présence, leur texture et leur calme.', collectionsKicker:'La collection', collectionTitle:'Des formes qui laissent respirer.', collectionDesc:'Une sélection illustrative à parcourir. Chaque objet présenté ici est un aperçu, et non une confirmation de disponibilité.', pieces:'Pièces en aperçu', sort:'Trier', sortFeatured:'Sélection', sortLow:'Prix croissant', sortHigh:'Prix décroissant', sortAZ:'Nom A–Z', category:'Catégorie', allCategories:'Toutes les catégories', mineral:'Minéraux', homeObjects:'Objets de maison', textile:'Sculptures', add:'Ajouter au panier aperçu', preview:'Aperçu uniquement', sample:'Prix indicatif', productNote:'Cette fiche est une présentation de démonstration. La disponibilité, la provenance, les dimensions et les caractéristiques sont à confirmer par la boutique.', cartTitle:'Votre panier aperçu', cartEmpty:'Votre panier est encore vide.', cartEmptyHint:'Parcourez les pièces en aperçu pour commencer.', continue:'Continuer la découverte', qty:'Quantité', remove:'Retirer', subtotal:'Sous-total indicatif', shipping:'Livraison', notCalculated:'Non disponible dans cet aperçu', checkout:'Continuer', checkoutNotice:'Les commandes en ligne et le paiement ne sont pas activés. Aucun achat ne sera créé depuis cet aperçu.', searchTitle:'Chercher une pièce', searchPlaceholder:'Minéraux, objets, matières…', searchResults:'résultats en aperçu', noResults:'Aucune pièce ne correspond à cette recherche.', searchTip:'Essayez « sélénite », « maison » ou « sculpture ».', ourStory:'Une maison de curiosités', storyLead:'Maroc Sélénite imagine une maison ouverte aux matières, aux gestes et aux objets qui invitent à ralentir.', storyText:'Née d’un regard tourné vers Marrakech, cette boutique en devenir rassemble des idées pour habiter les espaces avec plus de douceur. Les pièces présentées sur ce site sont des visuels de démonstration : elles ne décrivent pas une collection confirmée.', storySub:'Un projet en préparation', storyDetail:'Notre sélection, nos informations de provenance et nos services seront précisés par la boutique avant toute mise en vente. Cette expérience donne à voir une direction créative, pas une offre commerciale.', visit:'Écrire à la boutique', contactTitle:'Parlons ensemble', contactLead:'Pour une demande, une question ou une collaboration, les coordonnées officielles seront ajoutées ici par la boutique.', contactPlaceholder:'Coordonnées à renseigner par le propriétaire de la boutique.', name:'Nom', email:'E-mail', message:'Message', send:'Prévisualiser le message', formNoSend:'Aucun message n’a été envoyé. Les formulaires de contact ne sont pas encore connectés.', faqTitle:'Questions fréquentes', faqLead:'Les informations opérationnelles seront publiées par la boutique dès qu’elles seront confirmées.', shippingTitle:'Livraison & retours', privacyTitle:'Confidentialité', termsTitle:'Conditions d’utilisation', wholesaleTitle:'Pour les professionnels', wholesaleLead:'Vous êtes architecte, décorateur ou concept-store ? L’espace professionnel est en préparation.', placeholderTitle:'Informations à confirmer', placeholderCopy:'Cette rubrique est en préparation. Les informations et conditions réelles seront renseignées par le propriétaire de la boutique. Aucun engagement de livraison, de paiement, de retour ou de service n’est communiqué dans cet aperçu.', newsletter:'Des nouvelles, à votre rythme.', newsletterText:'La lettre de la boutique sera bientôt disponible.', subscribe:'S’inscrire', emailPlaceholder:'Votre adresse e-mail', footerLine:'Objets et matières, depuis Marrakech.', footerLegal:'Aperçu de démonstration — aucune vente en ligne.', language:'Langue', empty:'Rien à afficher pour le moment.', sortLabel:'Ordre d’affichage', homeMinerals:'Minéraux & matières', homeObjectsTitle:'Objets de maison', homeTextiles:'Formes sculptées', homeEditorial:'Une invitation à regarder autrement', homeEditorialText:'Textures naturelles, lignes sobres, lumière changeante. Une proposition éditoriale autour de la maison et des matières — conçue comme un premier regard.', noticeTiny:'Visuels générés à titre illustratif. Les pièces ne représentent pas un stock réel.', categorySelenite:'Sélénite', categoryVessels:'Vases & coupes', categoryObjects:'Objets décoratifs', categoryTextiles:'Sculptures', demoPrice:'Prix de démonstration', clickSearch:'Lancer la recherche'
+    home:'Accueil', collections:'Collections', story:'Notre histoire', contact:'Contact', search:'Recherche', cart:'Panier', all:'Tout voir', explore:'Explorer la collection', discover:'Découvrir les pièces', edit:'La matière, en toute simplicité', intro:'Objets de maison et minéraux choisis pour leur présence, leur texture et leur calme.', collectionsKicker:'La collection', collectionTitle:'Des formes qui laissent respirer.', collectionDesc:'Une sélection illustrative à parcourir. Chaque objet présenté ici est un aperçu, et non une confirmation de disponibilité.', pieces:'Pièces en aperçu', sort:'Trier', sortFeatured:'Sélection', sortLow:'Prix croissant', sortHigh:'Prix décroissant', sortAZ:'Nom A–Z', category:'Catégorie', allCategories:'Toutes les catégories', mineral:'Minéraux', homeObjects:'Objets de maison', textile:'Sculptures', add:'Ajouter au panier aperçu', preview:'Aperçu uniquement', sample:'Prix indicatif', productNote:'Cette fiche est une présentation de démonstration. La disponibilité, la provenance, les dimensions et les caractéristiques sont à confirmer par la boutique.', cartTitle:'Votre panier aperçu', cartEmpty:'Votre panier est encore vide.', cartEmptyHint:'Parcourez les pièces en aperçu pour commencer.', continue:'Continuer la découverte', qty:'Quantité', remove:'Retirer', subtotal:'Sous-total indicatif', shipping:'Livraison', notCalculated:'Non disponible dans cet aperçu', checkout:'Envoyer une demande', checkoutNotice:'Aucun paiement n’est effectué. La boutique reçoit votre demande et vous recontacte.', phone:'Téléphone', city:'Ville', note:'Message', requestSent:'Votre demande a été envoyée. La boutique vous recontactera.', requestError:'La demande n’a pas pu être envoyée. Réessayez dans un instant.', searchTitle:'Chercher une pièce', searchPlaceholder:'Minéraux, objets, matières…', searchResults:'résultats en aperçu', noResults:'Aucune pièce ne correspond à cette recherche.', searchTip:'Essayez « sélénite », « maison » ou « sculpture ».', ourStory:'Une maison de curiosités', storyLead:'Maroc Sélénite imagine une maison ouverte aux matières, aux gestes et aux objets qui invitent à ralentir.', storyText:'Née d’un regard tourné vers Marrakech, cette boutique en devenir rassemble des idées pour habiter les espaces avec plus de douceur. Les pièces présentées sur ce site sont des visuels de démonstration : elles ne décrivent pas une collection confirmée.', storySub:'Un projet en préparation', storyDetail:'Notre sélection, nos informations de provenance et nos services seront précisés par la boutique avant toute mise en vente. Cette expérience donne à voir une direction créative, pas une offre commerciale.', visit:'Écrire à la boutique', contactTitle:'Parlons ensemble', contactLead:'Pour une demande, une question ou une collaboration, les coordonnées officielles seront ajoutées ici par la boutique.', contactPlaceholder:'Coordonnées à renseigner par le propriétaire de la boutique.', name:'Nom', email:'E-mail', message:'Message', send:'Envoyer', formNoSend:'Aucun message n’a été envoyé. Les formulaires de contact ne sont pas encore connectés.', contactSent:'Votre message a été envoyé. La boutique vous répondra.', contactError:'Le message n’a pas pu être envoyé. Réessayez.', faqTitle:'Questions fréquentes', faqLead:'Les informations opérationnelles seront publiées par la boutique dès qu’elles seront confirmées.', shippingTitle:'Livraison & retours', privacyTitle:'Confidentialité', termsTitle:'Conditions d’utilisation', wholesaleTitle:'Pour les professionnels', wholesaleLead:'Vous êtes architecte, décorateur ou concept-store ? L’espace professionnel est en préparation.', placeholderTitle:'Informations à confirmer', placeholderCopy:'Cette rubrique est en préparation. Les informations et conditions réelles seront renseignées par le propriétaire de la boutique. Aucun engagement de livraison, de paiement, de retour ou de service n’est communiqué dans cet aperçu.', newsletter:'Des nouvelles, à votre rythme.', newsletterText:'La lettre de la boutique sera bientôt disponible.', subscribe:'S’inscrire', emailPlaceholder:'Votre adresse e-mail', footerLine:'Objets et matières, depuis Marrakech.', footerLegal:'Aperçu de démonstration — aucune vente en ligne.', language:'Langue', empty:'Rien à afficher pour le moment.', sortLabel:'Ordre d’affichage', homeMinerals:'Minéraux & matières', homeObjectsTitle:'Objets de maison', homeTextiles:'Formes sculptées', homeEditorial:'Une invitation à regarder autrement', homeEditorialText:'Textures naturelles, lignes sobres, lumière changeante. Une proposition éditoriale autour de la maison et des matières — conçue comme un premier regard.', noticeTiny:'Visuels générés à titre illustratif. Les pièces ne représentent pas un stock réel.', categorySelenite:'Sélénite', categoryVessels:'Vases & coupes', categoryObjects:'Objets décoratifs', categoryTextiles:'Sculptures', demoPrice:'Prix de démonstration', clickSearch:'Lancer la recherche', notFound:'Cette page n’existe pas', notFoundHint:'Le lien ne correspond à aucune page de la boutique.', backHome:'Retour à l’accueil'
   },
   en: {
     notice:'Store preview — content, imagery and prices are illustrative. No stock or real offer is confirmed.', info:'Information', heroKicker:'MARRAKECH · OBJECTS & MATERIALS', tileMaterial:'MATERIALS', tileHome:'HOME', tileTexture:'SCULPTURE', visualStudy:'VISUAL STUDY',
-    home:'Home', collections:'Collections', story:'Our story', contact:'Contact', search:'Search', cart:'Bag', all:'View all', explore:'Explore the collection', discover:'Discover the pieces', edit:'Material, considered simply', intro:'Home objects and minerals selected for their presence, texture and quiet.', collectionsKicker:'The collection', collectionTitle:'Forms that leave room to breathe.', collectionDesc:'An illustrative selection to explore. Every object shown here is a preview, not a confirmation of availability.', pieces:'Preview pieces', sort:'Sort', sortFeatured:'Featured', sortLow:'Price: low to high', sortHigh:'Price: high to low', sortAZ:'Name A–Z', category:'Category', allCategories:'All categories', mineral:'Minerals', homeObjects:'Home objects', textile:'Sculptures', add:'Add to preview bag', preview:'Preview only', sample:'Sample price', productNote:'This product page is for demonstration. Availability, provenance, dimensions and attributes must be confirmed by the shop.', cartTitle:'Your preview bag', cartEmpty:'Your bag is still empty.', cartEmptyHint:'Explore the preview pieces to begin.', continue:'Continue exploring', qty:'Quantity', remove:'Remove', subtotal:'Indicative subtotal', shipping:'Shipping', notCalculated:'Not available in this preview', checkout:'Continue', checkoutNotice:'Online orders and payment are not enabled. No purchase will be created from this preview.', searchTitle:'Find a piece', searchPlaceholder:'Minerals, objects, materials…', searchResults:'preview results', noResults:'No pieces match this search.', searchTip:'Try “selenite”, “home” or “sculpture”.', ourStory:'A house of curiosities', storyLead:'Maroc Sélénite imagines a home open to materials, gestures and objects that invite a slower pace.', storyText:'With a gaze turned toward Marrakech, this future boutique brings together ideas for living with a little more softness. The pieces shown on this site are demonstration visuals: they do not describe a confirmed collection.', storySub:'A project in the making', storyDetail:'Our selection, provenance information and services will be specified by the shop before anything is offered for sale. This experience shares a creative direction, not a commercial offer.', visit:'Write to the shop', contactTitle:'Let’s talk', contactLead:'For an enquiry, a question or a collaboration, official contact details will be added here by the shop.', contactPlaceholder:'Contact details to be supplied by the shop owner.', name:'Name', email:'Email', message:'Message', send:'Preview message', formNoSend:'No message was sent. Contact forms are not connected yet.', faqTitle:'Frequently asked questions', faqLead:'Operational information will be published by the shop once confirmed.', shippingTitle:'Shipping & returns', privacyTitle:'Privacy', termsTitle:'Terms of use', wholesaleTitle:'For professionals', wholesaleLead:'Are you an architect, interior designer or concept store? Our trade area is in preparation.', placeholderTitle:'Details to be confirmed', placeholderCopy:'This section is being prepared. Real information and terms will be supplied by the shop owner. No shipping, payment, returns or service commitments are stated in this preview.', newsletter:'Notes from the shop, in time.', newsletterText:'The shop letter will be available soon.', subscribe:'Sign up', emailPlaceholder:'Your email address', footerLine:'Objects and materials, from Marrakech.', footerLegal:'Demonstration preview — online sales are not available.', language:'Language', empty:'Nothing to show just yet.', sortLabel:'Display order', homeMinerals:'Minerals & materials', homeObjectsTitle:'Objects for home', homeTextiles:'Sculptural forms', homeEditorial:'An invitation to look again', homeEditorialText:'Natural textures, unhurried lines, shifting light. An editorial thought about home and material — offered as a first glimpse.', noticeTiny:'Images are generated illustrations. The pieces do not represent real stock.', categorySelenite:'Selenite', categoryVessels:'Vessels & bowls', categoryObjects:'Decorative objects', categoryTextiles:'Sculptures', demoPrice:'Demonstration price', clickSearch:'Search'
+    home:'Home', collections:'Collections', story:'Our story', contact:'Contact', search:'Search', cart:'Bag', all:'View all', explore:'Explore the collection', discover:'Discover the pieces', edit:'Material, considered simply', intro:'Home objects and minerals selected for their presence, texture and quiet.', collectionsKicker:'The collection', collectionTitle:'Forms that leave room to breathe.', collectionDesc:'An illustrative selection to explore. Every object shown here is a preview, not a confirmation of availability.', pieces:'Preview pieces', sort:'Sort', sortFeatured:'Featured', sortLow:'Price: low to high', sortHigh:'Price: high to low', sortAZ:'Name A–Z', category:'Category', allCategories:'All categories', mineral:'Minerals', homeObjects:'Home objects', textile:'Sculptures', add:'Add to preview bag', preview:'Preview only', sample:'Sample price', productNote:'This product page is for demonstration. Availability, provenance, dimensions and attributes must be confirmed by the shop.', cartTitle:'Your preview bag', cartEmpty:'Your bag is still empty.', cartEmptyHint:'Explore the preview pieces to begin.', continue:'Continue exploring', qty:'Quantity', remove:'Remove', subtotal:'Indicative subtotal', shipping:'Shipping', notCalculated:'Not available in this preview', checkout:'Send an order request', checkoutNotice:'No payment is taken. The shop receives your request and contacts you.', phone:'Phone', city:'City', note:'Note', requestSent:'Your request was sent. The shop will contact you.', requestError:'The request could not be sent. Please try again.', searchTitle:'Find a piece', searchPlaceholder:'Minerals, objects, materials…', searchResults:'preview results', noResults:'No pieces match this search.', searchTip:'Try “selenite”, “home” or “sculpture”.', ourStory:'A house of curiosities', storyLead:'Maroc Sélénite imagines a home open to materials, gestures and objects that invite a slower pace.', storyText:'With a gaze turned toward Marrakech, this future boutique brings together ideas for living with a little more softness. The pieces shown on this site are demonstration visuals: they do not describe a confirmed collection.', storySub:'A project in the making', storyDetail:'Our selection, provenance information and services will be specified by the shop before anything is offered for sale. This experience shares a creative direction, not a commercial offer.', visit:'Write to the shop', contactTitle:'Let’s talk', contactLead:'For an enquiry, a question or a collaboration, official contact details will be added here by the shop.', contactPlaceholder:'Contact details to be supplied by the shop owner.', name:'Name', email:'Email', message:'Message', send:'Send', formNoSend:'No message was sent. Contact forms are not connected yet.', contactSent:'Your message has been sent. The shop will reply.', contactError:'The message could not be sent. Please try again.', faqTitle:'Frequently asked questions', faqLead:'Operational information will be published by the shop once confirmed.', shippingTitle:'Shipping & returns', privacyTitle:'Privacy', termsTitle:'Terms of use', wholesaleTitle:'For professionals', wholesaleLead:'Are you an architect, interior designer or concept store? Our trade area is in preparation.', placeholderTitle:'Details to be confirmed', placeholderCopy:'This section is being prepared. Real information and terms will be supplied by the shop owner. No shipping, payment, returns or service commitments are stated in this preview.', newsletter:'Notes from the shop, in time.', newsletterText:'The shop letter will be available soon.', subscribe:'Sign up', emailPlaceholder:'Your email address', footerLine:'Objects and materials, from Marrakech.', footerLegal:'Demonstration preview — online sales are not available.', language:'Language', empty:'Nothing to show just yet.', sortLabel:'Display order', homeMinerals:'Minerals & materials', homeObjectsTitle:'Objects for home', homeTextiles:'Sculptural forms', homeEditorial:'An invitation to look again', homeEditorialText:'Natural textures, unhurried lines, shifting light. An editorial thought about home and material — offered as a first glimpse.', noticeTiny:'Images are generated illustrations. The pieces do not represent real stock.', categorySelenite:'Selenite', categoryVessels:'Vessels & bowls', categoryObjects:'Decorative objects', categoryTextiles:'Sculptures', demoPrice:'Demonstration price', clickSearch:'Search', notFound:'This page does not exist', notFoundHint:'This link does not match a page in the shop.', backHome:'Back to the shop'
   },
   ar: {
     notice:'معاينة المتجر — المحتوى والصور والأسعار توضيحية. لا يوجد مخزون أو عرض حقيقي مؤكد.', info:'معلومات', heroKicker:'مراكش · أغراض ومواد', tileMaterial:'مواد', tileHome:'المنزل', tileTexture:'منحوتات', visualStudy:'دراسة بصرية',
-    home:'الرئيسية', collections:'المجموعات', story:'قصتنا', contact:'اتصل بنا', search:'بحث', cart:'الحقيبة', all:'عرض الكل', explore:'استكشف المجموعة', discover:'اكتشف القطع', edit:'المادة ببساطة مدروسة', intro:'قطع منزلية ومعادن مختارة لحضورها وملمسها وهدوئها.', collectionsKicker:'المجموعة', collectionTitle:'أشكال تترك مجالاً للتنفس.', collectionDesc:'مجموعة توضيحية للاستكشاف. كل قطعة معروضة هنا معاينة وليست تأكيداً للتوفر.', pieces:'قطع للمعاينة', sort:'ترتيب', sortFeatured:'مختارة', sortLow:'السعر: من الأقل', sortHigh:'السعر: من الأعلى', sortAZ:'الاسم أ–ي', category:'الفئة', allCategories:'كل الفئات', mineral:'معادن', homeObjects:'أغراض منزلية', textile:'منحوتات', add:'أضف إلى حقيبة المعاينة', preview:'للمعاينة فقط', sample:'سعر افتراضي', productNote:'صفحة المنتج هذه للعرض التوضيحي. يجب تأكيد التوفر والمنشأ والأبعاد والخصائص من المتجر.', cartTitle:'حقيبة المعاينة', cartEmpty:'حقيبتك فارغة حالياً.', cartEmptyHint:'استكشف القطع المعروضة للبدء.', continue:'تابع الاستكشاف', qty:'الكمية', remove:'إزالة', subtotal:'المجموع التقريبي', shipping:'الشحن', notCalculated:'غير متاح في هذه المعاينة', checkout:'متابعة', checkoutNotice:'الطلبات والدفع عبر الإنترنت غير مفعّلين. لن يتم إنشاء أي عملية شراء من هذه المعاينة.', searchTitle:'ابحث عن قطعة', searchPlaceholder:'معادن، أغراض، مواد…', searchResults:'نتائج للمعاينة', noResults:'لا توجد قطع تطابق هذا البحث.', searchTip:'جرّب «سيلينيت» أو «منزل» أو «منحوتات».', ourStory:'دار من الفضول', storyLead:'يتخيل ماروك سيلينيت منزلاً منفتحاً على المواد واللمسات والأغراض التي تدعو إلى التمهل.', storyText:'من منظور يتجه نحو مراكش، يجمع هذا المتجر المرتقب أفكاراً للسكن بمزيد من الهدوء. القطع المعروضة هنا صور توضيحية ولا تصف مجموعة مؤكدة.', storySub:'مشروع قيد التحضير', storyDetail:'سيحدد المتجر اختياراته ومعلومات المنشأ والخدمات قبل عرض أي شيء للبيع. تقدم هذه التجربة اتجاهاً إبداعياً لا عرضاً تجارياً.', visit:'راسل المتجر', contactTitle:'لنتحدث', contactLead:'ستُضاف بيانات التواصل الرسمية هنا من قبل المتجر للاستفسارات والأسئلة والتعاون.', contactPlaceholder:'بيانات التواصل يضيفها مالك المتجر.', name:'الاسم', email:'البريد الإلكتروني', message:'الرسالة', send:'معاينة الرسالة', formNoSend:'لم تُرسل أي رسالة. نموذج التواصل غير متصل حالياً.', faqTitle:'الأسئلة الشائعة', faqLead:'سينشر المتجر المعلومات التشغيلية بعد تأكيدها.', shippingTitle:'الشحن والإرجاع', privacyTitle:'الخصوصية', termsTitle:'شروط الاستخدام', wholesaleTitle:'للمهنيين', wholesaleLead:'هل أنت مهندس معماري أو مصمم داخلي أو متجر متخصص؟ قسم المهنيين قيد الإعداد.', placeholderTitle:'معلومات بانتظار التأكيد', placeholderCopy:'يجري إعداد هذا القسم. سيضيف مالك المتجر المعلومات والشروط الحقيقية. لا تتضمن هذه المعاينة وعوداً بالشحن أو الدفع أو الإرجاع أو الخدمة.', newsletter:'ملاحظات من المتجر، حين يحين وقتها.', newsletterText:'ستتوفر رسالة المتجر قريباً.', subscribe:'التسجيل', emailPlaceholder:'بريدك الإلكتروني', footerLine:'أغراض ومواد من مراكش.', footerLegal:'معاينة توضيحية — البيع عبر الإنترنت غير متاح.', language:'اللغة', empty:'لا شيء للعرض حالياً.', sortLabel:'طريقة العرض', homeMinerals:'معادن ومواد', homeObjectsTitle:'أغراض للمنزل', homeTextiles:'أشكال منحوتة', homeEditorial:'دعوة إلى النظر من جديد', homeEditorialText:'ملامس طبيعية وخطوط هادئة وضوء متغير. تصور تحريري للمنزل والمواد — لمحة أولى فحسب.', noticeTiny:'صور مولّدة لأغراض توضيحية. القطع لا تمثل مخزوناً حقيقياً.', categorySelenite:'سيلينيت', categoryVessels:'أوانٍ وأوعية', categoryObjects:'أغراض للزينة', categoryTextiles:'منحوتات', demoPrice:'سعر توضيحي', clickSearch:'بحث'
+    home:'الرئيسية', collections:'المجموعات', story:'قصتنا', contact:'اتصل بنا', search:'بحث', cart:'الحقيبة', all:'عرض الكل', explore:'استكشف المجموعة', discover:'اكتشف القطع', edit:'المادة ببساطة مدروسة', intro:'قطع منزلية ومعادن مختارة لحضورها وملمسها وهدوئها.', collectionsKicker:'المجموعة', collectionTitle:'أشكال تترك مجالاً للتنفس.', collectionDesc:'مجموعة توضيحية للاستكشاف. كل قطعة معروضة هنا معاينة وليست تأكيداً للتوفر.', pieces:'قطع للمعاينة', sort:'ترتيب', sortFeatured:'مختارة', sortLow:'السعر: من الأقل', sortHigh:'السعر: من الأعلى', sortAZ:'الاسم أ–ي', category:'الفئة', allCategories:'كل الفئات', mineral:'معادن', homeObjects:'أغراض منزلية', textile:'منحوتات', add:'أضف إلى حقيبة المعاينة', preview:'للمعاينة فقط', sample:'سعر افتراضي', productNote:'صفحة المنتج هذه للعرض التوضيحي. يجب تأكيد التوفر والمنشأ والأبعاد والخصائص من المتجر.', cartTitle:'حقيبة المعاينة', cartEmpty:'حقيبتك فارغة حالياً.', cartEmptyHint:'استكشف القطع المعروضة للبدء.', continue:'تابع الاستكشاف', qty:'الكمية', remove:'إزالة', subtotal:'المجموع التقريبي', shipping:'الشحن', notCalculated:'غير متاح في هذه المعاينة', checkout:'إرسال طلب', checkoutNotice:'لا يتم أي دفع. يستلم المتجر طلبك ويتواصل معك.', phone:'الهاتف', city:'المدينة', note:'ملاحظة', requestSent:'أُرسل طلبك. سيتواصل المتجر معك.', requestError:'تعذر إرسال الطلب. أعد المحاولة بعد قليل.', searchTitle:'ابحث عن قطعة', searchPlaceholder:'معادن، أغراض، مواد…', searchResults:'نتائج للمعاينة', noResults:'لا توجد قطع تطابق هذا البحث.', searchTip:'جرّب «سيلينيت» أو «منزل» أو «منحوتات».', ourStory:'دار من الفضول', storyLead:'يتخيل ماروك سيلينيت منزلاً منفتحاً على المواد واللمسات والأغراض التي تدعو إلى التمهل.', storyText:'من منظور يتجه نحو مراكش، يجمع هذا المتجر المرتقب أفكاراً للسكن بمزيد من الهدوء. القطع المعروضة هنا صور توضيحية ولا تصف مجموعة مؤكدة.', storySub:'مشروع قيد التحضير', storyDetail:'سيحدد المتجر اختياراته ومعلومات المنشأ والخدمات قبل عرض أي شيء للبيع. تقدم هذه التجربة اتجاهاً إبداعياً لا عرضاً تجارياً.', visit:'راسل المتجر', contactTitle:'لنتحدث', contactLead:'ستُضاف بيانات التواصل الرسمية هنا من قبل المتجر للاستفسارات والأسئلة والتعاون.', contactPlaceholder:'بيانات التواصل يضيفها مالك المتجر.', name:'الاسم', email:'البريد الإلكتروني', message:'الرسالة', send:'إرسال', formNoSend:'لم تُرسل أي رسالة. نموذج التواصل غير متصل حالياً.', contactSent:'تم إرسال رسالتك. سيرد المتجر عليك.', contactError:'تعذر إرسال الرسالة. أعد المحاولة.', faqTitle:'الأسئلة الشائعة', faqLead:'سينشر المتجر المعلومات التشغيلية بعد تأكيدها.', shippingTitle:'الشحن والإرجاع', privacyTitle:'الخصوصية', termsTitle:'شروط الاستخدام', wholesaleTitle:'للمهنيين', wholesaleLead:'هل أنت مهندس معماري أو مصمم داخلي أو متجر متخصص؟ قسم المهنيين قيد الإعداد.', placeholderTitle:'معلومات بانتظار التأكيد', placeholderCopy:'يجري إعداد هذا القسم. سيضيف مالك المتجر المعلومات والشروط الحقيقية. لا تتضمن هذه المعاينة وعوداً بالشحن أو الدفع أو الإرجاع أو الخدمة.', newsletter:'ملاحظات من المتجر، حين يحين وقتها.', newsletterText:'ستتوفر رسالة المتجر قريباً.', subscribe:'التسجيل', emailPlaceholder:'بريدك الإلكتروني', footerLine:'أغراض ومواد من مراكش.', footerLegal:'معاينة توضيحية — البيع عبر الإنترنت غير متاح.', language:'اللغة', empty:'لا شيء للعرض حالياً.', sortLabel:'طريقة العرض', homeMinerals:'معادن ومواد', homeObjectsTitle:'أغراض للمنزل', homeTextiles:'أشكال منحوتة', homeEditorial:'دعوة إلى النظر من جديد', homeEditorialText:'ملامس طبيعية وخطوط هادئة وضوء متغير. تصور تحريري للمنزل والمواد — لمحة أولى فحسب.', noticeTiny:'صور مولّدة لأغراض توضيحية. القطع لا تمثل مخزوناً حقيقياً.', categorySelenite:'سيلينيت', categoryVessels:'أوانٍ وأوعية', categoryObjects:'أغراض للزينة', categoryTextiles:'منحوتات', demoPrice:'سعر توضيحي', clickSearch:'بحث', notFound:'هذه الصفحة غير موجودة', notFoundHint:'هذا الرابط لا يطابق أي صفحة في المتجر.', backHome:'العودة إلى المتجر'
   }
 };
 
-const products: Product[] = [
+const demoProducts: Product[] = [
   { id:'sel-bowl', slug:'coupe-selenite', category:'selenite', price:680, image:'/selenite-bowl.png', tone:'mineral', title:{fr:'Coupe sélénite',en:'Selenite bowl',ar:'وعاء سيلينيت'}, subtitle:{fr:'Minéral · pièce de démonstration',en:'Mineral · demonstration piece',ar:'معدن · قطعة توضيحية'}, description:{fr:'Une forme douce imaginée autour de la translucidité et des strates minérales.',en:'A quiet form imagined around translucency and mineral striations.',ar:'شكل هادئ مستوحى من الشفافية والطبقات المعدنية.'} },
   { id:'sel-tower', slug:'forme-minerale', category:'selenite', price:420, image:'/atelier-hero.png', tone:'sand', title:{fr:'Forme minérale',en:'Mineral form',ar:'تشكيل معدني'}, subtitle:{fr:'Minéral · étude visuelle',en:'Mineral · visual study',ar:'معدن · دراسة بصرية'}, description:{fr:'Une silhouette sculpturale qui capte la lumière, présentée comme une étude de matière.',en:'A sculptural silhouette that catches the light, shown as a material study.',ar:'هيئة نحتية تلتقط الضوء، معروضة كدراسة للمواد.'} },
   { id:'vase-argile', slug:'vase-argile', category:'vessels', price:560, image:'/atelier-hero.png', tone:'clay', title:{fr:'Vase aux lignes libres',en:'Vase, free lines',ar:'مزهرية بخطوط حرة'}, subtitle:{fr:'Objet de maison · illustration',en:'Home object · illustration',ar:'غرض منزلي · رسم توضيحي'}, description:{fr:'Un volume aux contours simples, imaginé dans une palette pierre et ivoire.',en:'A simple outlined volume, imagined in a palette of stone and ivory.',ar:'حجم بخطوط بسيطة، متخيّل بألوان الحجر والعاج.'} },
@@ -38,17 +38,42 @@ const products: Product[] = [
   { id:'sculpture-stele', slug:'stele-minerale', category:'sculptures', price:450, image:'/atelier-hero.png', tone:'navy', title:{fr:'Stèle minérale',en:'Mineral stele',ar:'مسلة معدنية'}, subtitle:{fr:'Sculpture · étude visuelle',en:'Sculpture · visual study',ar:'منحوتة · دراسة بصرية'}, description:{fr:'Une étude imaginaire de hauteur, de ligne et de lumière, présentée uniquement comme aperçu.',en:'An imagined study in height, line and light, shown only as a preview.',ar:'دراسة تخيلية للارتفاع والخط والضوء، معروضة للمعاينة فقط.'} },
 ];
 const fmt = (n:number, locale:Locale) => new Intl.NumberFormat(locale === 'ar' ? 'fr-FR' : locale === 'fr' ? 'fr-FR' : 'en-GB', { style:'currency', currency:'MAD', maximumFractionDigits:0 }).format(n);
+type HomeTile = { label: Record<Locale,string>; title: Record<Locale,string>; image: string; href: string };
+type HomeContent = { announcement: Record<Locale,string>; heroKicker: Record<Locale,string>; heroTitle: Record<Locale,string>; heroIntro: Record<Locale,string>; heroImage: string; tiles: HomeTile[]; editorialKicker: Record<Locale,string>; editorialTitle: Record<Locale,string>; editorialText: Record<Locale,string>; editorialImage: string; featuredProductIds: string[] };
+type ShopCategory = { id: string; parentId: string | null; slug: string; name: Record<Locale,string> };
+type CatalogValue = { products: Product[]; home: HomeContent | null; categories: ShopCategory[]; previewNotice: boolean; ready: boolean };
+const CatalogContext = createContext<CatalogValue>({ products: demoProducts, home: null, categories: [], previewNotice: true, ready: false });
 const useStore = () => { const value = useContext(StoreContext); if (!value) throw new Error('Store context missing'); return value; };
+const useCatalog = () => useContext(CatalogContext);
+const textOf = (value: string) => { const [first, ...rest] = value.split('\n'); const second = rest.join(' ').trim(); return <>{first}{second && <><br/><em>{second}</em></>}</>; };
+
+function CatalogProvider({ children }: { children: ReactNode }) {
+  const [catalog, setCatalog] = useState<CatalogValue>({ products: demoProducts, home: null, categories: [], previewNotice: true, ready: false });
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/store', { credentials: 'include' }).then((response) => response.ok ? response.json() : Promise.reject(new Error('store'))).then((data) => {
+      if (cancelled) return;
+      const products: Product[] = (data.products || []).map((product: { id: string; slug: string; categoryId?: string | null; price: number; tone?: string; title: Product['title']; subtitle: Product['subtitle']; description: Product['description']; images?: { url: string }[] }) => ({
+        id: product.id, slug: product.slug, category: product.categoryId || '', price: product.price, image: product.images?.[0]?.url || '/atelier-hero.png', tone: product.tone || 'mineral', title: product.title, subtitle: product.subtitle, description: product.description,
+      }));
+      setCatalog({ products, home: data.home ?? null, categories: data.categories || [], previewNotice: Boolean(data.settings?.previewNotice), ready: true });
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
+  return <CatalogContext.Provider value={catalog}>{children}</CatalogContext.Provider>;
+}
 const copyProduct = (product:Product, locale:Locale) => product.title[locale];
 
 function Header() {
   const { locale, setLocale, cart, t } = useStore();
+  const { previewNotice, home, ready } = useCatalog();
   const [menuOpen, setMenuOpen] = useState(false);
   const [location, setLocation] = useLocation();
   const lang = (event: ChangeEvent<HTMLSelectElement>) => setLocale(event.target.value as Locale);
   const navigateSearch = () => setLocation('/search');
+  const notice = ready && home?.announcement?.[locale] ? home.announcement[locale] : t('notice');
   return <>
-    <div className="announcement" data-testid="text-demo-notice">{t('notice')}</div>
+    {(!ready || previewNotice) && <div className="announcement" data-testid="text-demo-notice">{notice}</div>}
     <header className="header">
       <div className="header-inner">
         <button className="icon-button mobile-menu" aria-label={locale==='fr'?'Ouvrir le menu':locale==='ar'?'فتح القائمة':'Open menu'} data-testid="button-menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={19}/> : <Menu size={20}/>}</button>
@@ -104,21 +129,25 @@ function ProductGrid({ items }: { items:Product[] }) {
 
 function Home() {
   const { t, locale } = useStore();
-  const heroTitle = locale === 'ar' ? <>السيلينيت،<br/><em>في الضوء.</em></> : locale === 'fr' ? <>La lumière,<br/><em>en matière.</em></> : <>Light,<br/><em>made tangible.</em></>;
+  const { products, home, ready } = useCatalog();
+  const content = ready ? home : null;
+  const heroTitle = content?.heroTitle?.[locale] ? textOf(content.heroTitle[locale]) : locale === 'ar' ? <>السيلينيت،<br/><em>في الضوء.</em></> : locale === 'fr' ? <>La lumière,<br/><em>en matière.</em></> : <>Light,<br/><em>made tangible.</em></>;
+  const featured = content ? (content.featuredProductIds || []).map((id) => products.find((product) => product.id === id)).filter((product): product is Product => !!product) : products.slice(0, 4);
+  const tiles = content?.tiles?.length ? content.tiles : null;
   return <main>
     <section className="hero">
       <div className="hero-visual fade-up">
-        <img src="/selenite-lifestyle-hero.png" alt={t('noticeTiny')}/>
+        <img src={content?.heroImage || '/selenite-lifestyle-hero.png'} alt={t('noticeTiny')}/>
         <div className="hero-copy">
-          <div className="eyebrow">{t('heroKicker')}</div>
+          <div className="eyebrow">{content?.heroKicker?.[locale] || t('heroKicker')}</div>
           <h1>{heroTitle}</h1>
-          <p>{t('intro')}</p>
+          <p>{content?.heroIntro?.[locale] || t('intro')}</p>
           <Link href="/collections/maison" className="button-primary" data-testid="link-explore">{t('explore')} <ArrowUpRight size={14}/></Link>
         </div>
         <div className="hero-notes" aria-label={t('collectionsKicker')}>
-          <span><small>01</small>{t('homeMinerals')}</span>
-          <span><small>02</small>{t('homeObjectsTitle')}</span>
-          <span><small>03</small>{t('homeTextiles')}</span>
+          <span><small>01</small>{tiles?.[0]?.title[locale] || t('homeMinerals')}</span>
+          <span><small>02</small>{tiles?.[1]?.title[locale] || t('homeObjectsTitle')}</span>
+          <span><small>03</small>{tiles?.[2]?.title[locale] || t('homeTextiles')}</span>
         </div>
         <span className="visual-label">{t('visualStudy')} · 01 / 06</span>
       </div>
@@ -129,12 +158,12 @@ function Home() {
           <p>{t('collectionDesc')}</p>
           <Link href="/collections/selenite" className="utility-link">{t('all')} <ArrowUpRight size={13}/></Link>
         </div>
-        <div className="hero-side-products">{products.slice(0,3).map(product=><ProductCard key={product.id} product={product}/>)}</div>
+        <div className="hero-side-products">{(content ? featured : products).slice(0,3).map(product=><ProductCard key={product.id} product={product}/>)}</div>
         <div className="hero-side-feature">
-          <img src="/selenite-bowl.png" alt={t('noticeTiny')}/>
+          <img src={content?.editorialImage || '/selenite-bowl.png'} alt={t('noticeTiny')}/>
           <div>
-            <div className="eyebrow">MAROC SÉLÉNITE · 01</div>
-            <h3>{t('homeEditorial')}</h3>
+            <div className="eyebrow">{content?.editorialKicker?.[locale] || 'MAROC SÉLÉNITE · 01'}</div>
+            <h3>{content?.editorialTitle?.[locale] || t('homeEditorial')}</h3>
             <Link href="/our-story" className="utility-link">{t('story')} <ArrowUpRight size={13}/></Link>
           </div>
         </div>
@@ -144,18 +173,20 @@ function Home() {
       <section className="section collection-feature-section">
         <div className="section-heading"><div><div className="eyebrow">{t('collectionsKicker')}</div><h2>{t('edit')}</h2></div><p>{t('collectionDesc')}</p></div>
         <div className="collection-tiles">
-          <Link href="/collections/selenite" className="collection-tile"><img src="/selenite-bowl.png" alt=""/><div className="tile-copy"><small>01 / {t('tileMaterial')}</small><h3>{t('homeMinerals')}</h3></div></Link>
-          <Link href="/collections/maison" className="collection-tile"><img src="/atelier-hero.png" alt=""/><div className="tile-copy"><small>02 / {t('tileHome')}</small><h3>{t('homeObjectsTitle')}</h3></div></Link>
-          <Link href="/collections/sculptures" className="collection-tile"><img src="/atelier-hero.png" alt=""/><div className="tile-copy"><small>03 / {t('tileTexture')}</small><h3>{t('homeTextiles')}</h3></div></Link>
+          {(tiles || [
+            { href:'/collections/selenite', image:'/selenite-bowl.png', label:{fr:t('tileMaterial'),en:t('tileMaterial'),ar:t('tileMaterial')}, title:{fr:t('homeMinerals'),en:t('homeMinerals'),ar:t('homeMinerals')} },
+            { href:'/collections/maison', image:'/atelier-hero.png', label:{fr:t('tileHome'),en:t('tileHome'),ar:t('tileHome')}, title:{fr:t('homeObjectsTitle'),en:t('homeObjectsTitle'),ar:t('homeObjectsTitle')} },
+            { href:'/collections/sculptures', image:'/atelier-hero.png', label:{fr:t('tileTexture'),en:t('tileTexture'),ar:t('tileTexture')}, title:{fr:t('homeTextiles'),en:t('homeTextiles'),ar:t('homeTextiles')} },
+          ]).slice(0,3).map((tile, index) => <Link key={tile.href + index} href={tile.href} className="collection-tile"><img src={tile.image} alt=""/><div className="tile-copy"><small>0{index + 1} / {tile.label[locale]}</small><h3>{tile.title[locale]}</h3></div></Link>)}
         </div>
       </section>
       <section className="section">
         <div className="section-heading"><div><div className="eyebrow">{t('preview')} · 06</div><h2>{t('pieces')}</h2></div><Link href="/collections/maison" className="utility-link">{t('all')} <ArrowRight size={13}/></Link></div>
-        <ProductGrid items={products.slice(0,4)}/>
+        <ProductGrid items={featured}/>
       </section>
       <section className="editorial-band">
-        <div className="editorial-image"><img src="/atelier-hero.png" alt={t('homeEditorial')}/></div>
-        <div className="editorial-copy"><div className="eyebrow">MAROC SÉLÉNITE · NOTE 01</div><h2>{t('homeEditorial')}</h2><p>{t('homeEditorialText')}</p><Link href="/our-story" className="button-outline">{t('story')} <ArrowUpRight size={14}/></Link></div>
+        <div className="editorial-image"><img src={content?.editorialImage || '/atelier-hero.png'} alt={content?.editorialTitle?.[locale] || t('homeEditorial')}/></div>
+        <div className="editorial-copy"><div className="eyebrow">{content?.editorialKicker?.[locale] || 'MAROC SÉLÉNITE · NOTE 01'}</div><h2>{content?.editorialTitle?.[locale] || t('homeEditorial')}</h2><p>{content?.editorialText?.[locale] || t('homeEditorialText')}</p><Link href="/our-story" className="button-outline">{t('story')} <ArrowUpRight size={14}/></Link></div>
       </section>
     </div>
     <Newsletter/>
@@ -171,32 +202,42 @@ function Newsletter() {
 
 function Collection() {
   const params = useParams<{slug:string}>();
-  const { t } = useStore();
-  const [category,setCategory] = useState(params.slug === 'selenite' ? 'selenite' : params.slug === 'sculptures' ? 'sculptures' : params.slug === 'vessels' ? 'vessels' : 'all');
+  const { t, locale } = useStore();
+  const { products, categories, ready } = useCatalog();
+  const fromSlug = (slug?: string) => categories.find((item) => item.slug === slug)?.id || (slug === 'selenite' || slug === 'sculptures' || slug === 'vessels' ? slug : 'all');
+  const [category,setCategory] = useState(fromSlug(params.slug));
   const [sort,setSort] = useState('featured');
-  useEffect(()=>setCategory(params.slug === 'selenite' ? 'selenite' : params.slug === 'sculptures' ? 'sculptures' : params.slug === 'vessels' ? 'vessels' : 'all'),[params.slug]);
+  useEffect(()=>setCategory(fromSlug(params.slug)),[params.slug, categories]);
   const filtered = useMemo(()=>{
-    let result = category==='all' ? [...products] : products.filter(product=>product.category===category);
+    const childIds = new Set(categories.filter((item) => item.parentId === category).map((item) => item.id));
+    let result = category==='all' ? [...products] : products.filter(product=>product.category===category || childIds.has(product.category));
     if(sort==='low') result.sort((a,b)=>a.price-b.price);
     if(sort==='high') result.sort((a,b)=>b.price-a.price);
     if(sort==='az') result.sort((a,b)=>a.title.en.localeCompare(b.title.en));
     return result;
-  },[category,sort]);
+  },[category,sort,products,categories]);
   return <main className="page-wrap">
     <header className="page-header"><div className="eyebrow">{t('collectionsKicker')} / MAROC SÉLÉNITE</div><h1>{t('collectionTitle')}</h1><p>{t('collectionDesc')}</p></header>
     <div className="catalog-controls"><div className="category-chips" aria-label={t('category')}>
-      {[['all',t('allCategories')],['selenite',t('categorySelenite')],['vessels',t('categoryVessels')],['objects',t('categoryObjects')],['sculptures',t('categoryTextiles')]].map(([id,label])=><button className={`chip ${category===id?'active':''}`} key={id} onClick={()=>setCategory(id)} data-testid={`button-filter-${id}`}>{label}</button>)}
+      {(ready && categories.length ? [['all', t('allCategories')], ...categories.map((item) => [item.id, item.name[locale]])] : [['all',t('allCategories')],['selenite',t('categorySelenite')],['vessels',t('categoryVessels')],['objects',t('categoryObjects')],['sculptures',t('categoryTextiles')]]).map(([id,label])=><button className={`chip ${category===id?'active':''}`} key={id} onClick={()=>setCategory(id)} data-testid={`button-filter-${id}`}>{label}</button>)}
     </div><label className="sort-label"><span className="sr-only">{t('sortLabel')}</span><select value={sort} onChange={e=>setSort(e.target.value)} className="sort-select" data-testid="select-sort"><option value="featured">{t('sortFeatured')}</option><option value="low">{t('sortLow')}</option><option value="high">{t('sortHigh')}</option><option value="az">{t('sortAZ')}</option></select></label></div>
     <p className="results-count" data-testid="text-product-count">{filtered.length} · {t('pieces')}</p><ProductGrid items={filtered}/>
   </main>;
 }
 
+function Missing() {
+  const { t } = useStore();
+  return <main className="page-wrap" style={{ minHeight:'50vh', display:'grid', alignContent:'center', gap:16 }}><h1>{t('notFound')}</h1><p>{t('notFoundHint')}</p><Link href="/" className="button-outline">{t('backHome')}</Link></main>;
+}
+
 function ProductDetail() {
   const { slug } = useParams<{slug:string}>();
   const { locale,t,add } = useStore();
+  const { products, ready } = useCatalog();
   const product = products.find(item=>item.slug===slug);
   const [quantity,setQuantity] = useState(1);
-  if(!product) return <NotFound/>;
+  if(!product && !ready) return <main className="page-wrap"><p>{t('empty')}</p></main>;
+  if(!product) return <Missing/>;
   return <main className="page-wrap">
     <div className="detail-layout">
       <div className="detail-image"><img src={product.image} alt={copyProduct(product,locale)}/></div>
@@ -212,11 +253,13 @@ function ProductDetail() {
 
 function SearchPage() {
   const { t,locale } = useStore();
+  const { products } = useCatalog();
   const [location,setLocation] = useLocation();
-  const query = new URLSearchParams(location.split('?')[1] || '').get('q') || '';
+  const search = useSearch();
+  const query = new URLSearchParams(search).get('q') || '';
   const [value,setValue] = useState(query);
   useEffect(()=>setValue(query),[query]);
-  const results = useMemo(()=>products.filter(product=>(product.title[locale]+' '+product.subtitle[locale]+' '+product.description[locale]).toLocaleLowerCase().includes(query.toLocaleLowerCase())),[query,locale]);
+  const results = useMemo(()=>products.filter(product=>(product.title[locale]+' '+product.subtitle[locale]+' '+product.description[locale]).toLocaleLowerCase().includes(query.toLocaleLowerCase())),[query,locale,products]);
   const submit = (event:FormEvent<HTMLFormElement>)=>{event.preventDefault();setLocation(`/search?q=${encodeURIComponent(value.trim())}`);};
   return <main className="page-wrap"><header className="page-header"><div className="eyebrow">{t('collections')}</div><h1>{t('searchTitle')}</h1><p>{t('searchTip')}</p></header>
     <form className="search-form" onSubmit={submit}><input value={value} onChange={e=>setValue(e.target.value)} autoFocus placeholder={t('searchPlaceholder')} aria-label={t('search')} data-testid="input-search"/><button aria-label={t('clickSearch')} data-testid="button-search"><Search size={20}/></button></form>
@@ -225,14 +268,18 @@ function SearchPage() {
 }
 
 function Cart() {
-  const { t,locale,cart,change,remove } = useStore();
+  const { t,locale,cart,change,remove,clear } = useStore();
+  const { products } = useCatalog();
+  const [sent, setSent] = useState(false);
+  const [requestError, setRequestError] = useState('');
+  const [pending, setPending] = useState(false);
   const entries = cart.map(item=>({item,product:products.find(product=>product.id===item.id)})).filter((entry):entry is {item:CartItem;product:Product}=>!!entry.product);
   const total = entries.reduce((sum,entry)=>sum+entry.product.price*entry.item.quantity,0);
   return <main className="page-wrap">
     <header className="page-header"><div className="eyebrow">{t('preview')}</div><h1>{t('cartTitle')}</h1></header>
-    {!entries.length ? <div className="cart-empty"><ShoppingBag size={25} strokeWidth={1}/><h2>{t('cartEmpty')}</h2><p>{t('cartEmptyHint')}</p><Link href="/collections/maison" className="button-primary">{t('continue')} <ArrowRight size={14}/></Link></div> :
+    {!entries.length ? <div className="cart-empty"><ShoppingBag size={25} strokeWidth={1}/><h2>{sent ? t('requestSent') : t('cartEmpty')}</h2><p>{sent ? '' : t('cartEmptyHint')}</p><Link href="/collections/maison" className="button-primary">{t('continue')} <ArrowRight size={14}/></Link></div> :
       <div className="cart-layout"><div>{entries.map(({item,product})=><article className="cart-row" key={item.id} data-testid={`row-cart-${item.id}`}><Link href={`/products/${product.slug}`}><img src={product.image} alt={product.title[locale]}/></Link><div><Link href={`/products/${product.slug}`} className="utility-link"><h3>{product.title[locale]}</h3></Link><p>{product.subtitle[locale]}</p><div className="quantity"><button aria-label={locale==='fr'?'Diminuer la quantité':locale==='ar'?'تقليل الكمية':'Decrease quantity'} onClick={()=>change(item.id,-1)} data-testid={`button-qty-minus-${item.id}`}><Minus size={12}/></button><span>{item.quantity}</span><button aria-label={locale==='fr'?'Augmenter la quantité':locale==='ar'?'زيادة الكمية':'Increase quantity'} onClick={()=>change(item.id,1)} data-testid={`button-qty-plus-${item.id}`}><Plus size={12}/></button></div><button className="cart-remove" onClick={()=>remove(item.id)} data-testid={`button-remove-${item.id}`}>{t('remove')}</button></div><span className="price">{fmt(product.price*item.quantity,locale)}</span></article>)}</div>
-      <aside className="cart-summary"><h2>{t('cartTitle')}</h2><div className="summary-line"><span>{t('subtotal')}</span><span>{fmt(total,locale)}</span></div><div className="summary-line"><span>{t('shipping')}</span><span>{t('notCalculated')}</span></div><div className="summary-line total"><span>{t('demoPrice')}</span><span>{fmt(total,locale)}</span></div><div className="notice-box">{t('checkoutNotice')}</div><button className="button-primary" style={{width:'100%',marginTop:16}} disabled data-testid="button-checkout">{t('checkout')} <ArrowRight size={14}/></button></aside></div>}
+      <aside className="cart-summary"><h2>{t('cartTitle')}</h2><div className="summary-line"><span>{t('subtotal')}</span><span>{fmt(total,locale)}</span></div><div className="summary-line"><span>{t('shipping')}</span><span>{t('notCalculated')}</span></div><div className="summary-line total"><span>{t('demoPrice')}</span><span>{fmt(total,locale)}</span></div><div className="notice-box">{t('checkoutNotice')}</div><form onSubmit={async (event) => { event.preventDefault(); const data = new FormData(event.currentTarget); setPending(true); setRequestError(''); try { const response = await fetch('/api/order-requests', { method:'POST', credentials:'include', headers:{'content-type':'application/json'}, body: JSON.stringify({ name: data.get('name'), email: data.get('email'), phone: data.get('phone'), city: data.get('city'), note: data.get('note') || '', lines: entries.map(({item}) => ({ productId: item.id, quantity: item.quantity })) }) }); if (!response.ok) throw new Error('request'); clear(); setSent(true); } catch { setRequestError(t('requestError')); } finally { setPending(false); } }}><div className="form-field"><label htmlFor="order-name">{t('name')}</label><input required id="order-name" name="name" data-testid="input-order-name"/></div><div className="form-field"><label htmlFor="order-email">{t('email')}</label><input required type="email" id="order-email" name="email" data-testid="input-order-email"/></div><div className="form-field"><label htmlFor="order-phone">{t('phone')}</label><input required id="order-phone" name="phone" data-testid="input-order-phone"/></div><div className="form-field"><label htmlFor="order-city">{t('city')}</label><input required id="order-city" name="city" data-testid="input-order-city"/></div><div className="form-field"><label htmlFor="order-note">{t('note')}</label><textarea id="order-note" name="note" data-testid="input-order-note"/></div>{requestError && <p className="admin-error">{requestError}</p>}<button className="button-primary" style={{width:'100%',marginTop:16}} disabled={pending} data-testid="button-checkout">{t('checkout')} <ArrowRight size={14}/></button></form></aside></div>}
   </main>;
 }
 
@@ -253,9 +300,9 @@ function FAQ() {
   const {t,locale}=useStore();
   const [open,setOpen]=useState<number|null>(null);
   const questions:Record<Locale,[string,string][]> = {
-    fr:[['Les pièces présentées sont-elles disponibles ?','Non. Les visuels et produits sont des exemples de présentation ; le stock réel n’est pas confirmé.'],['Puis-je commander en ligne ?','Les commandes et le paiement en ligne ne sont pas activés dans cet aperçu.'],['Quels sont les délais de livraison ?','Aucun délai n’est communiqué ici. Les informations seront ajoutées après confirmation par la boutique.'],['Comment contacter la boutique ?','Les coordonnées officielles seront renseignées par le propriétaire de la boutique sur la page Contact.']],
-    en:[['Are the pieces shown available?','No. Products and imagery are presentation examples; real stock is not confirmed.'],['Can I order online?','Online orders and payment are not enabled in this preview.'],['What are the delivery times?','No delivery time is stated here. Information will be added once confirmed by the shop.'],['How can I contact the shop?','Official contact details will be supplied by the shop owner on the Contact page.']],
-    ar:[['هل القطع المعروضة متاحة؟','لا. المنتجات والصور أمثلة للعرض، ولم يتم تأكيد المخزون الحقيقي.'],['هل يمكنني الطلب عبر الإنترنت؟','الطلبات والدفع عبر الإنترنت غير مفعّلين في هذه المعاينة.'],['ما مواعيد التوصيل؟','لا نذكر موعداً للتوصيل هنا. ستضاف المعلومات بعد تأكيدها من المتجر.'],['كيف أتواصل مع المتجر؟','سيضيف مالك المتجر بيانات التواصل الرسمية في صفحة التواصل.']]
+    fr:[['Les pièces présentées sont-elles disponibles ?','Non. Les visuels et produits sont des exemples de présentation ; le stock réel n’est pas confirmé.'],['Puis-je commander en ligne ?','Vous pouvez envoyer une demande depuis le panier. Le paiement en ligne n’est pas activé.'],['Quels sont les délais de livraison ?','Aucun délai n’est communiqué ici. Les informations seront ajoutées après confirmation par la boutique.'],['Comment contacter la boutique ?','Les coordonnées officielles seront renseignées par le propriétaire de la boutique sur la page Contact.']],
+    en:[['Are the pieces shown available?','No. Products and imagery are presentation examples; real stock is not confirmed.'],['Can I order online?','You can send a request from the bag. Online payment is not enabled.'],['What are the delivery times?','No delivery time is stated here. Information will be added once confirmed by the shop.'],['How can I contact the shop?','Official contact details will be supplied by the shop owner on the Contact page.']],
+    ar:[['هل القطع المعروضة متاحة؟','لا. المنتجات والصور أمثلة للعرض، ولم يتم تأكيد المخزون الحقيقي.'],['هل يمكنني الطلب عبر الإنترنت؟','يمكن إرسال طلب من الحقيبة. الدفع عبر الإنترنت غير مفعّل.'],['ما مواعيد التوصيل؟','لا نذكر موعداً للتوصيل هنا. ستضاف المعلومات بعد تأكيدها من المتجر.'],['كيف أتواصل مع المتجر؟','سيضيف مالك المتجر بيانات التواصل الرسمية في صفحة التواصل.']]
   };
   return <main className="content-page"><div className="eyebrow">MAROC SÉLÉNITE · INFORMATIONS</div><h1>{t('faqTitle')}</h1><p className="lead">{t('faqLead')}</p><div style={{marginTop:40}}>{questions[locale].map(([q,a],index)=><div className="faq-item" key={q}><button className="faq-question" onClick={()=>setOpen(open===index?null:index)} aria-expanded={open===index} data-testid={`button-faq-${index}`}>{q}{open===index?<Minus size={15}/>:<Plus size={15}/>}</button>{open===index&&<div className="faq-answer" data-testid={`text-faq-answer-${index}`}>{a}</div>}</div>)}</div></main>;
 }
@@ -263,8 +310,24 @@ function FAQ() {
 function Contact() {
   const {t}=useStore();
   const [sent,setSent]=useState(false);
-  const submit=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();setSent(true);};
-  return <main className="content-page"><div className="eyebrow">MAROC SÉLÉNITE · CONTACT</div><h1>{t('contactTitle')}</h1><p className="lead">{t('contactLead')}</p><div className="contact-grid"><div><div className="notice-box">{t('contactPlaceholder')}</div><p>{t('placeholderCopy')}</p></div><div>{sent?<div className="success-message" data-testid="text-form-preview">{t('formNoSend')}</div>:<form onSubmit={submit}><div className="form-field"><label htmlFor="contact-name">{t('name')}</label><input required id="contact-name" data-testid="input-contact-name"/></div><div className="form-field"><label htmlFor="contact-email">{t('email')}</label><input required type="email" id="contact-email" data-testid="input-contact-email"/></div><div className="form-field"><label htmlFor="contact-message">{t('message')}</label><textarea required id="contact-message" data-testid="input-contact-message"/></div><button className="button-primary" data-testid="button-contact-submit">{t('send')} <ArrowRight size={14}/></button><p>{t('formNoSend')}</p></form>}</div></div></main>;
+  const [pending,setPending]=useState(false);
+  const [error,setError]=useState('');
+  const submit=async (event:FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();
+    const data=new FormData(event.currentTarget);
+    setPending(true);
+    setError('');
+    try {
+      const response=await fetch('/api/contact-messages',{method:'POST',credentials:'include',headers:{'content-type':'application/json'},body:JSON.stringify({name:data.get('name'),email:data.get('email'),message:data.get('message')})});
+      if(!response.ok) throw new Error('request');
+      setSent(true);
+    } catch {
+      setError(t('contactError'));
+    } finally {
+      setPending(false);
+    }
+  };
+  return <main className="content-page"><div className="eyebrow">MAROC SÉLÉNITE · CONTACT</div><h1>{t('contactTitle')}</h1><p className="lead">{t('contactLead')}</p><div className="contact-grid"><div><div className="notice-box">{t('contactPlaceholder')}</div><p>{t('placeholderCopy')}</p></div><div>{sent?<div className="success-message" data-testid="text-contact-sent">{t('contactSent')}</div>:<form onSubmit={submit}><div className="form-field"><label htmlFor="contact-name">{t('name')}</label><input required id="contact-name" name="name" data-testid="input-contact-name"/></div><div className="form-field"><label htmlFor="contact-email">{t('email')}</label><input required type="email" id="contact-email" name="email" data-testid="input-contact-email"/></div><div className="form-field"><label htmlFor="contact-message">{t('message')}</label><textarea required id="contact-message" name="message" data-testid="input-contact-message"/></div>{error&&<p className="form-error" data-testid="text-contact-error">{error}</p>}<button className="button-primary" disabled={pending} data-testid="button-contact-submit">{t('send')} <ArrowRight size={14}/></button></form>}</div></div></main>;
 }
 
 function SearchResultRoute() { return <SearchPage/>; }
@@ -276,22 +339,30 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 
 function AppShell() {
   const {locale}=useStore();
+  const {products}=useCatalog();
   const [location] = useLocation();
   useEffect(()=>{document.documentElement.lang=locale;document.documentElement.dir=locale==='ar'?'rtl':'ltr';},[locale]);
   useEffect(()=>{
-    const path=location.split('?')[0];
-    const productSlug=path.match(/^\/products\/([^/]+)/)?.[1];
-    const product=products.find(item=>item.slug===productSlug);
-    const pageHeading=product?.title[locale] || document.querySelector('main h1')?.textContent?.trim() || 'Maroc Sélénite';
-    const description=product?.description[locale] || `${pageHeading}. ${copy[locale].noticeTiny}`;
-    document.title=`${pageHeading} — Maroc Sélénite`;
-    const descriptionTag=document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    const ogTitle=document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
-    const ogDescription=document.querySelector<HTMLMetaElement>('meta[property="og:description"]');
-    if(descriptionTag) descriptionTag.content=description;
-    if(ogTitle) ogTitle.content=document.title;
-    if(ogDescription) ogDescription.content=description;
-  },[location,locale]);
+    const apply=()=>{
+      const path=location.split('?')[0];
+      const productSlug=path.match(/^\/products\/([^/]+)/)?.[1];
+      const product=products.find(item=>item.slug===productSlug);
+      const pageHeading=product?.title[locale] || document.querySelector('main h1')?.innerText.replace(/\s+/g,' ').trim() || 'Maroc Sélénite';
+      const description=product?.description[locale] || `${pageHeading}. ${copy[locale].noticeTiny}`;
+      document.title=`${pageHeading} — Maroc Sélénite`;
+      const descriptionTag=document.querySelector<HTMLMetaElement>('meta[name="description"]');
+      const ogTitle=document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
+      const ogDescription=document.querySelector<HTMLMetaElement>('meta[property="og:description"]');
+      if(descriptionTag) descriptionTag.content=description;
+      if(ogTitle) ogTitle.content=document.title;
+      if(ogDescription) ogDescription.content=description;
+    };
+    apply();
+    const observer=new MutationObserver(apply);
+    observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+    return ()=>observer.disconnect();
+  },[location,locale,products]);
+  if (location.split('?')[0].startsWith('/admin')) return <AdminApp/>;
   return <div className="site-shell"><Header/><RoutedErrorBoundary><Switch>
    <Route path="/" component={Home}/>
     <Route path="/collections/:slug" component={Collection}/>
@@ -305,7 +376,7 @@ function AppShell() {
     <Route path="/privacy">{()=><EditorialPage type="privacy"/>}</Route>
     <Route path="/terms">{()=><EditorialPage type="terms"/>}</Route>
     <Route path="/wholesale">{()=><EditorialPage type="wholesale"/>}</Route>
-    <Route component={NotFound}/>
+    <Route component={Missing}/>
   </Switch></RoutedErrorBoundary><Footer/></div>;
 }
 
@@ -318,8 +389,9 @@ function App() {
   const add=(id:string,quantity=1)=>setCart(current=>current.some(item=>item.id===id)?current.map(item=>item.id===id?{...item,quantity:item.quantity+quantity}:item):[...current,{id,quantity}]);
   const change=(id:string,delta:number)=>setCart(current=>current.map(item=>item.id===id?{...item,quantity:item.quantity+delta}:item).filter(item=>item.quantity>0));
   const remove=(id:string)=>setCart(current=>current.filter(item=>item.id!==id));
-  const value:StoreContextValue={locale,setLocale:setLocaleState,cart,add,change,remove,t:(key)=>copy[locale][key]??key};
-  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/,'')}><StoreContext.Provider value={value}><AppShell/></StoreContext.Provider></WouterRouter><Toaster/></TooltipProvider></QueryClientProvider>;
+  const clear=()=>setCart([]);
+  const value:StoreContextValue={locale,setLocale:setLocaleState,cart,add,change,remove,clear,t:(key)=>copy[locale][key]??key};
+  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/,'')}><StoreContext.Provider value={value}><CatalogProvider><AppShell/></CatalogProvider></StoreContext.Provider></WouterRouter><Toaster/></TooltipProvider></QueryClientProvider>;
 }
 
 export default App;

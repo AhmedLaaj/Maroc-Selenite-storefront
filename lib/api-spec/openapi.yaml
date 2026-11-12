@@ -3,20 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Maroc Sélénite shop and backoffice API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: store
+    description: Public shop
+  - name: admin
+    description: Shop backoffice
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +27,795 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /store:
+    get:
+      operationId: getStore
+      tags: [store]
+      summary: Published shop content
+      responses:
+        "200":
+          description: Shop content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicStore"
+  /contact-messages:
+    post:
+      operationId: createContactMessage
+      tags: [store]
+      summary: Send a contact message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactMessageInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Created"
+        "400":
+          description: Invalid message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+  /order-requests:
+    post:
+      operationId: createOrderRequest
+      tags: [store]
+      summary: Send an order request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderRequestInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Created"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Sign in with the shop password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+        "401":
+          description: Wrong password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "503":
+          description: Password is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+  /admin/logout:
+    post:
+      operationId: adminLogout
+      tags: [admin]
+      summary: Sign out
+      responses:
+        "200":
+          description: Signed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+  /admin/session:
+    get:
+      operationId: adminSession
+      tags: [admin]
+      summary: Current admin session
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+        "401":
+          description: Signed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+  /admin/store:
+    get:
+      operationId: getAdminStore
+      tags: [admin]
+      summary: Full catalog for the backoffice
+      responses:
+        "200":
+          description: Catalog
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStore"
+        "401":
+          description: Signed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+  /admin/settings:
+    put:
+      operationId: updateSettings
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsInput"
+      responses:
+        "200":
+          description: Updated catalog
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStore"
+  /admin/home:
+    put:
+      operationId: updateHome
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HomeContent"
+      responses:
+        "200":
+          description: Updated home page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeContent"
+  /admin/media:
+    post:
+      operationId: uploadHomeMedia
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/MediaUpload"
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadedMedia"
+  /admin/watermark:
+    post:
+      operationId: uploadWatermark
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/MediaUpload"
+      responses:
+        "200":
+          description: Watermark applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStore"
+  /admin/categories:
+    post:
+      operationId: createCategory
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Created"
+  /admin/categories/{id}:
+    put:
+      operationId: updateCategory
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+    delete:
+      operationId: deleteCategory
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+  /admin/products:
+    post:
+      operationId: createProduct
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Created"
+  /admin/products/{id}:
+    put:
+      operationId: updateProduct
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+    delete:
+      operationId: deleteProduct
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+  /admin/products/{id}/images:
+    post:
+      operationId: uploadProductImage
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/MediaUpload"
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadedImage"
+  /admin/images/{id}:
+    delete:
+      operationId: deleteProductImage
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+  /admin/messages:
+    get:
+      operationId: listContactMessages
+      tags: [admin]
+      responses:
+        "200":
+          description: Contact messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContactMessage"
+  /admin/messages/{id}:
+    patch:
+      operationId: updateContactMessage
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderStatusInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+  /admin/orders:
+    get:
+      operationId: listOrderRequests
+      tags: [admin]
+      responses:
+        "200":
+          description: Order requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderRequest"
+  /admin/orders/{id}:
+    patch:
+      operationId: updateOrderRequest
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderStatusInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
 components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
   schemas:
+    MediaUpload:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+      required: [file]
     HealthStatus:
       type: object
       properties:
         status:
           type: string
-      required:
-        - status
-
+      required: [status]
+    Ok:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required: [ok]
+    Created:
+      type: object
+      properties:
+        id:
+          type: string
+      required: [id]
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+    Localized:
+      type: object
+      properties:
+        fr:
+          type: string
+        en:
+          type: string
+        ar:
+          type: string
+      required: [fr, en, ar]
+    LoginInput:
+      type: object
+      properties:
+        password:
+          type: string
+      required: [password]
+    Settings:
+      type: object
+      properties:
+        previewNotice:
+          type: boolean
+        watermarkUrl:
+          type: string
+          nullable: true
+        watermarkCorner:
+          type: string
+        watermarkOpacity:
+          type: number
+      required: [previewNotice, watermarkCorner, watermarkOpacity]
+    SettingsInput:
+      type: object
+      properties:
+        previewNotice:
+          type: boolean
+        watermarkCorner:
+          type: string
+        watermarkOpacity:
+          type: number
+      required: [previewNotice, watermarkCorner, watermarkOpacity]
+    HomeTile:
+      type: object
+      properties:
+        label:
+          $ref: "#/components/schemas/Localized"
+        title:
+          $ref: "#/components/schemas/Localized"
+        image:
+          type: string
+        href:
+          type: string
+      required: [label, title, image, href]
+    HomeContent:
+      type: object
+      properties:
+        announcement:
+          $ref: "#/components/schemas/Localized"
+        heroKicker:
+          $ref: "#/components/schemas/Localized"
+        heroTitle:
+          $ref: "#/components/schemas/Localized"
+        heroIntro:
+          $ref: "#/components/schemas/Localized"
+        heroImage:
+          type: string
+        tiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/HomeTile"
+        editorialKicker:
+          $ref: "#/components/schemas/Localized"
+        editorialTitle:
+          $ref: "#/components/schemas/Localized"
+        editorialText:
+          $ref: "#/components/schemas/Localized"
+        editorialImage:
+          type: string
+        featuredProductIds:
+          type: array
+          items:
+            type: string
+      required: [announcement, heroKicker, heroTitle, heroIntro, heroImage, tiles, editorialKicker, editorialTitle, editorialText, editorialImage, featuredProductIds]
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+        parentId:
+          type: string
+          nullable: true
+        slug:
+          type: string
+        name:
+          $ref: "#/components/schemas/Localized"
+        sortOrder:
+          type: integer
+      required: [id, slug, name, sortOrder]
+    CategoryInput:
+      type: object
+      properties:
+        parentId:
+          type: string
+          nullable: true
+        slug:
+          type: string
+        name:
+          $ref: "#/components/schemas/Localized"
+        sortOrder:
+          type: integer
+      required: [slug, name]
+    ProductImage:
+      type: object
+      properties:
+        id:
+          type: string
+        original:
+          type: string
+        published:
+          type: string
+      required: [id, original, published]
+    PublicImage:
+      type: object
+      properties:
+        url:
+          type: string
+      required: [url]
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        categoryId:
+          type: string
+          nullable: true
+        price:
+          type: integer
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+        tone:
+          type: string
+        title:
+          $ref: "#/components/schemas/Localized"
+        subtitle:
+          $ref: "#/components/schemas/Localized"
+        description:
+          $ref: "#/components/schemas/Localized"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductImage"
+      required: [id, slug, price, published, sortOrder, tone, title, subtitle, description, images]
+    PublicProduct:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        categoryId:
+          type: string
+          nullable: true
+        price:
+          type: integer
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+        tone:
+          type: string
+        title:
+          $ref: "#/components/schemas/Localized"
+        subtitle:
+          $ref: "#/components/schemas/Localized"
+        description:
+          $ref: "#/components/schemas/Localized"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicImage"
+      required: [id, slug, price, published, sortOrder, tone, title, subtitle, description, images]
+    ProductInput:
+      type: object
+      properties:
+        slug:
+          type: string
+        categoryId:
+          type: string
+          nullable: true
+        price:
+          type: integer
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+        tone:
+          type: string
+        title:
+          $ref: "#/components/schemas/Localized"
+        subtitle:
+          $ref: "#/components/schemas/Localized"
+        description:
+          $ref: "#/components/schemas/Localized"
+      required: [slug, price, published, title, subtitle, description]
+    PublicStore:
+      type: object
+      properties:
+        settings:
+          type: object
+          properties:
+            previewNotice:
+              type: boolean
+          required: [previewNotice]
+        home:
+          $ref: "#/components/schemas/HomeContent"
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicProduct"
+      required: [settings, categories, products]
+    AdminStore:
+      type: object
+      properties:
+        settings:
+          $ref: "#/components/schemas/Settings"
+        home:
+          $ref: "#/components/schemas/HomeContent"
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+      required: [settings, categories, products]
+    UploadedMedia:
+      type: object
+      properties:
+        url:
+          type: string
+      required: [url]
+    UploadedImage:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+      required: [id, url]
+    OrderLineInput:
+      type: object
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+      required: [productId, quantity]
+    ContactMessageInput:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        message:
+          type: string
+      required: [name, email, message]
+    ContactMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+      required: [id, name, email, message, status, createdAt]
+    OrderRequestInput:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        city:
+          type: string
+        note:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderLineInput"
+      required: [name, email, phone, city, lines]
+    OrderLine:
+      type: object
+      properties:
+        id:
+          type: string
+        productId:
+          type: string
+          nullable: true
+        title:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: integer
+      required: [id, title, quantity, unitPrice]
+    OrderRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        city:
+          type: string
+        note:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderLine"
+      required: [id, name, email, phone, city, note, status, createdAt, lines]
+    OrderStatusInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [new, contacted, closed]
+      required: [status]

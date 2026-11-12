@@ -1,0 +1,43 @@
+# Local shop: the site, the API, and Postgres.
+# Coolify does not use this file. After deploying the image there:
+# - add a Postgres database and set DATABASE_URL
+# - set ADMIN_PASSWORD
+# - set UPLOAD_DIR=/data/uploads
+# - attach a persistent volume at /data/uploads
+# - keep the container port at 80
+# - leave COOKIE_SECURE unset on the http sslip.io preview
+# - set COOKIE_SECURE=true only for the HTTPS domain
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: maroc
+      POSTGRES_PASSWORD: maroc
+      POSTGRES_DB: maroc
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U maroc -d maroc"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      DATABASE_URL: postgres://maroc:maroc@db:5432/maroc
+      ADMIN_PASSWORD: maroc-preview
+      UPLOAD_DIR: /data/uploads
+      PORT: "80"
+      COOKIE_SECURE: "false"
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:
